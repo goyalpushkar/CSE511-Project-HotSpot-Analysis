@@ -43,7 +43,32 @@ def runHotcellAnalysis(spark: SparkSession, pointPath: String): DataFrame =
   val numCells = (maxX - minX + 1)*(maxY - minY + 1)*(maxZ - minZ + 1)
 
   // YOU NEED TO CHANGE THIS PART
+  // obtain all the pickup points x, y, z within the given boundary
+  val filtered_points = pickupInfo
+    .filter(col("x")>= minX and col("x")<= maxX and col("y") >= minY and col("y") <= maxY and col("z") >= minZ and col("z") <= maxZ)
+    .groupBy("x", "y", "z")
+    .count()
+    .persist()
+  filtered_points.createOrReplaceTempView("hotcell_view")
+  //calculate mean and standard deviation
+  val mean: Double = filtered_points.agg(sum("count") / numCells).first.getDouble(0)
+  val std: Double = math.sqrt(filtered_points.agg(sum(pow("count", 2.0)) / numCells - math.pow(mean, 2.0)).first.getDouble(0))
 
-  return pickupInfo // YOU NEED TO CHANGE THIS PART
+  //Cross join
+  spark.udf.register("is_neighbor", (x1: Int, y1: Int, z1: Int, x2: Int, y2: Int, z2: Int) => (HotcellUtils.is_neighbor(x1, y1, z1, x2, y2, z2)))
+  var cross_join = spark.sql("SELECT i.x AS x, i.y AS y, i.z AS z, j.count AS count FROM hotcell_view i, hotcell_view j WHERE is_neighbor(i.x, i.y, i.z, j.x, j.y, j.z)")
+  cross_join = cross_join.groupBy("x", "y", "z").sum("count")
+  newCoordinateName = Seq("x", "y", "z", "sum_neigh")
+  cross_join = cross_join.toDF(newCoordinateName: _*)
+  cross_join.createOrReplaceTempView("cross_join")
+
+  //Get g-score
+  spark.udf.register("getis_ord", (sum_neigh: Int) => HotcellUtils.getis_ord(numCells, mean, std, sum_neigh))
+  var gScore = spark.sql("SELECT x, y, z, getis_ord(sum_neigh) AS gscore FROM cross_join")
+  gScore.createOrReplaceTempView("gscore_view")
+  var final_result = spark.sql("SELECT x, y, z FROM gscore_view  ORDER BY gscore DESC, x DESC, y ASC, z DESC")
+
+  return final_result.coalesce(1)
+  // YOU NEED TO CHANGE THIS PART
 }
 }
