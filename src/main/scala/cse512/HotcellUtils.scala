@@ -48,4 +48,21 @@ object HotcellUtils {
   }
 
   // YOU NEED TO CHANGE THIS PART
-}
+  def is_neighbor(x1: Int, y1: Int, z1: Int,
+                       x2: Int, y2: Int, z2: Int): Boolean = {
+    if (math.abs(x1 - x2) <= 1
+      && math.abs(y1 - y2) <= 1
+      && math.abs(z1 - z2) <= 1) {
+      return true
+    } else {
+      return false
+    }
+  }
+
+  def getis_ord(numCells: Double, mean: Double, std: Double, sum_neigh: Int): Double = {
+    val g_score =
+    (sum_neigh - mean * 27) /
+      (std * math.sqrt((numCells * 27 - (27 * 27)) / (numCells - 1.0)))
+        return g_score
+  }
+}  
