@@ -47,5 +47,45 @@ object HotcellUtils {
     return calendar.get(Calendar.DAY_OF_MONTH)
   }
 
-  // YOU NEED TO CHANGE THIS PART
+  def is_neighbor(x1: Int, y1: Int, z1: Int,
+                  x2: Int, y2: Int, z2: Int): Boolean = {
+    if (math.abs(x1 - x2) <= 1
+      && math.abs(y1 - y2) <= 1
+      && math.abs(z1 - z2) <= 1) {
+      return true
+    } else {
+      return false
+    }
+  }
+
+  def getis_ord(numCells: Double, mean: Double, std: Double, sum_neigh: Int,x: Int, y: Int, z: Int, minX: Int, maxX: Int, minY: Int, maxY: Int, minZ: Int, maxZ: Int): Double = {
+    var adj = 27
+    if (x == minX || x == maxX){
+      if ((y == minY || y == maxY) && (z == minZ || z == maxZ)){
+        adj = 8
+      }
+      else if ((y == minY || y == maxY) || (z == minZ || z == maxZ)){
+        adj = 12
+      }
+      else {
+        adj = 18
+      }
+    }
+    else if(y == minY || y == maxY){
+      if((z == minZ || z == maxZ)){
+        adj = 12
+      }
+      else{
+        adj = 18
+      }
+    }
+    else if (z == minZ || z == maxZ){
+      adj = 18
+    }
+
+    val top = (sum_neigh.toDouble - mean * adj)
+    val bottom = (std * math.sqrt((numCells * adj - (adj * adj)) / (numCells - 1.0)))
+    if (bottom == 0.0){return 0.0}
+    return (top/bottom)
+  }
 }
