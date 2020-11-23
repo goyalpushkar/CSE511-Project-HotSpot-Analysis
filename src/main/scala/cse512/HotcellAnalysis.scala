@@ -107,7 +107,7 @@ def runHotcellAnalysis(spark: SparkSession, pointPath: String): DataFrame =
                                     * sqrt( ( ( $numCells * get_num_of_neighbours(x, y, z, $minX, $maxX, $minY, $maxY, $minZ, $maxZ) ) - pow(get_num_of_neighbours(x, y, z, $minX, $maxX, $minY, $maxY, $minZ, $maxZ),2) ) 
                                           / ( $numCells - 1 ) 
                                           ) 
-                                  ) = 0 THEN 0
+                                  ) = 0 THEN 0   -- This is to check denominator is not zero
                                   ELSE
                                         ( en.spatial_weight_of_neighbours - ( $cellMean * get_num_of_neighbours(x, y, z, $minX, $maxX, $minY, $maxY, $minZ, $maxZ) ) )
                                       / (   ( $cellDeviation ) 

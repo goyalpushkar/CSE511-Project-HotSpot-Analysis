@@ -70,34 +70,34 @@ object HotcellUtils {
    
   //This way the cubes which are on the edges and corners of the boundary of the problem statement will not have complete 26 neighbors
   //There are total 9 + 9 + 3 + 3 + 1 + 1 = 26 which have atleast one visible face.
-  //There are total 8 cubes which are on corners (3 visible faces)
-  //There are total 12 cubes which are on the edges  (2 visible faces)
+  //There are total 8 cubes which are on corners (3 visible faces/Axis matching with boundary)
+  //There are total 12 cubes which are on the edges  (2 visible faces/Axis matching with boundary)
   //There are total 26 - 8 - 12 = 6 (1 visible face)
   def get_num_of_neighbours(x: Double, y: Double, z: Double
                            ,minX: Double, maxX: Double
                            ,minY: Double, maxY: Double
                            ,minZ: Double, maxZ: Double): Int = {    
     var neighbour = 27   //26
-    if ( x == minX || x == maxX ){
-      if ( ( y == minY || y == maxY ) && (z == minZ || z == maxZ) ){
+    if ( x == minX || x == maxX ){  // X axis is matching with the boundary
+      if ( ( y == minY || y == maxY ) && (z == minZ || z == maxZ) ){   //All 3 axis are matching with boundary
         neighbour = 8
       }
-      else if ( (y == minY || y == maxY) || (z == minZ || z == maxZ) ){
+      else if ( (y == minY || y == maxY) || (z == minZ || z == maxZ) ){  //2 of the axis are matching with boundary
         neighbour = 12
       }
-      else
-        neighbour = 18  //6 
+      else    // Not at the corners of the boundary as Y and Z are not matching i.e. 26(total neighbors) - 8(corner cubes)
+        neighbour = 18  //6   
     }  
-    else if (y == minY || y == maxY){
-      if (z == minZ || z == maxZ){
+    else if (y == minY || y == maxY){ // Y axis is matching with the boundary and X axis is not at boundary
+      if (z == minZ || z == maxZ){   //Y and Z - 2 axis are matching with boundary
         neighbour = 12
       }else
-        neighbour = 18 //6 
+        neighbour = 18 //6    // Not at the corners of the boundary as X and Z both are not matching i.e. 26(total neighbors) - 8(corner cubes)
     }
-    else if (z == minZ || z == maxZ){
-      neighbour = 18  //6 
+    else if (z == minZ || z == maxZ){  // Z axis is matching with the boundary and X-Y are not at the boundary
+      neighbour = 18  //6     // Not at the corners of the boundary as X and Y both are not matching i.e. 26(total neighbors) - 8(corner cubes)
     }
-    return neighbour
+    return neighbour    //If none of the boundary axis are matching. i.e cube is inside the boundary and have default neighbors.
   }
   
   

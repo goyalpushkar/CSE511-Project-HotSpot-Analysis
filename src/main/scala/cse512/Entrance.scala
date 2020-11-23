@@ -4,7 +4,7 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 
 object Entrance extends App {
-  Logger.getLogger("org.spark_project").setLevel(Level.INFO)   //WARN Pushkar changed
+  Logger.getLogger("org.spark_project").setLevel(Level.INFO)   //WARN Team14 changed
   Logger.getLogger("org.apache").setLevel(Level.WARN)
   Logger.getLogger("akka").setLevel(Level.WARN)
   Logger.getLogger("com").setLevel(Level.WARN)
@@ -19,11 +19,11 @@ object Entrance extends App {
     
     //paramsParser(spark, args)
     
-    //Pushkar Testing
+    //Team14 Testing
     logger.info("Arguments - ")
     args.foreach(println)
     customTesting(spark, args)
-    //Pushkar Testing
+    //Team14 Testing
 
   }
   
