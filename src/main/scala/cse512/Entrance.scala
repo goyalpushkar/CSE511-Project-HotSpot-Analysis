@@ -29,7 +29,7 @@ object Entrance extends App {
   
   //Custom function to test each method individually one by one
   private def customTesting(spark: SparkSession, args: Array[String]): Unit = {
-     val outputPath = "result/output"
+     val outputPath = "test/output " //"result/output" //test/output 
      logger.info("Inside customTesting - ")
      //Run hotzoneanalysis - hotzoneanalysis src/resources/point_hotzone.csv src/resources/zone-hotzone.csv
      //Run hotcellanalysis - hotcellanalysis src/resources/yellow_trip_sample_100000.csv 
@@ -79,11 +79,11 @@ object Entrance extends App {
     val queryParam = queryParams.split(" ")
     if (queryName.equalsIgnoreCase("hotcellanalysis")) {
       if (queryParam.length != 1) throw new ArrayIndexOutOfBoundsException("[CSE512] Query " + queryName + " needs 1 parameters but you entered " + queryParam.length)
-      HotcellAnalysis.runHotcellAnalysis(spark, queryParam(0)).limit(50).write.mode(SaveMode.Overwrite).csv(outputPath)  //.coalesce(1)
+      HotcellAnalysis.runHotcellAnalysis(spark, queryParam(0)).limit(50).write.mode(SaveMode.Overwrite).csv(outputPath)  //.coalesce(1) Added for testing
     }
     else if (queryName.equalsIgnoreCase("hotzoneanalysis")) {
       if (queryParam.length != 2) throw new ArrayIndexOutOfBoundsException("[CSE512] Query " + queryName + " needs 2 parameters but you entered " + queryParam.length)
-      HotzoneAnalysis.runHotZoneAnalysis(spark, queryParam(0), queryParam(1)).write.mode(SaveMode.Overwrite).csv(outputPath)  //.coalesce(1)
+      HotzoneAnalysis.runHotZoneAnalysis(spark, queryParam(0), queryParam(1)).write.mode(SaveMode.Overwrite).csv(outputPath)  //.coalesce(1) Added for testing
     }
     else {
       throw new NoSuchElementException("[CSE512] The given query name " + queryName + " is wrong. Please check your input.")
