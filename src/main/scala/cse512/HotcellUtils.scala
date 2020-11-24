@@ -100,8 +100,32 @@ object HotcellUtils {
     return neighbour    //If none of the boundary axis are matching. i.e cube is inside the boundary and have default neighbors.
   }
   
+  def getis_ord_cal(spatial_neighbor_weight: Double, noOfNeighbors: Int, mean: scala.math.BigDecimal, std_deviation: scala.math.BigDecimal, numCells: Double): BigDecimal = {
+     val numerator = ( spatial_neighbor_weight - ( mean * noOfNeighbors ) )
+     val denominator = (   ( std_deviation ) 
+                          * math.sqrt( ( ( numCells * noOfNeighbors ) - math.pow(noOfNeighbors,2) ) 
+                                     / ( numCells - 1 ) 
+                                     ) 
+                        ) 
+     if (denominator == 0 ){
+       return 0.0
+     }else{
+       return numerator/denominator
+     }
+  }
   
-  def getis_ord(numCells: Double, mean: Double, std: Double, sum_neigh: Int,x: Int, y: Int, z: Int, minX: Int, maxX: Int, minY: Int, maxY: Int, minZ: Int, maxZ: Int): Double = {
+  def getis_ord(spatial_neighbor_weight: Double, mean: scala.math.BigDecimal, std_deviation: scala.math.BigDecimal): BigDecimal = {
+     //As per Live Event wi,j i.e. spatial weight between cell i and j is equal and assumed to be 1
+     val numerator = spatial_neighbor_weight - mean
+     val denominator = std_deviation
+     if (denominator == 0 ){
+       return 0.0
+     }else{
+       return numerator/denominator
+     }
+  }
+  
+  /*def getis_ord(numCells: Double, mean: Double, std: Double, sum_neigh: Int,x: Int, y: Int, z: Int, minX: Int, maxX: Int, minY: Int, maxY: Int, minZ: Int, maxZ: Int): Double = {
   
     //Candice
     //val g_score = (sum_neigh - mean * 27) /
@@ -138,5 +162,5 @@ object HotcellUtils {
     return (top/bottom)
     
     //return 0.0 // g_score
-  }
+  }*/
 }

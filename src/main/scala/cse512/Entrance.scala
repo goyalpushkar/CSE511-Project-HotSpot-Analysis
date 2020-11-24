@@ -4,32 +4,33 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 
 object Entrance extends App {
-  Logger.getLogger("org.spark_project").setLevel(Level.INFO)   //WARN Team14 changed
+  Logger.getLogger("org.spark_project").setLevel(Level.WARN)   //WARN Team14 changed
   Logger.getLogger("org.apache").setLevel(Level.WARN)
   Logger.getLogger("akka").setLevel(Level.WARN)
   Logger.getLogger("com").setLevel(Level.WARN)
-
+  
+  //test/output hotzoneanalysis src/resources/point_hotzone.csv src/resources/zone-hotzone.csv hotcellanalysis src/resources/yellow_trip_sample_100000.csv
   override def main(args: Array[String]) {
     val spark = SparkSession
       .builder()
       .appName("CSE512-HotspotAnalysis-Team14") // YOU NEED TO CHANGE YOUR GROUP NAME
       .config("spark.some.config.option", "some-value")
-      .master("local[*]")   //Enable this to run locally and disable before generating jar file
+      //.master("local[*]")   //Enable this to run locally and disable before generating jar file
       .getOrCreate()
     
-    //paramsParser(spark, args)
+    paramsParser(spark, args)
     
     //Team14 Testing
-    logger.info("Arguments - ")
+    /*logger.info("Arguments - ")
     args.foreach(println)
-    customTesting(spark, args)
+    customTesting(spark, args)*/
     //Team14 Testing
 
   }
   
   //Custom function to test each method individually one by one
   private def customTesting(spark: SparkSession, args: Array[String]): Unit = {
-     val outputPath = "test/output " //"result/output" //test/output 
+     val outputPath = "result/output" // "test/output " //"result/output" //test/output 
      logger.info("Inside customTesting - ")
      //Run hotzoneanalysis - hotzoneanalysis src/resources/point_hotzone.csv src/resources/zone-hotzone.csv
      //Run hotcellanalysis - hotcellanalysis src/resources/yellow_trip_sample_100000.csv 

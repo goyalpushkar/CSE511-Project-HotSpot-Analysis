@@ -5,7 +5,7 @@ import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 
 object HotzoneAnalysis {
 
-  Logger.getLogger("org.spark_project").setLevel(Level.INFO)  //WARN Modified by Team14
+  Logger.getLogger("org.spark_project").setLevel(Level.WARN)  //INFO Modified by Team14 Reverted
   Logger.getLogger("org.apache").setLevel(Level.WARN)
   Logger.getLogger("akka").setLevel(Level.WARN)
   Logger.getLogger("com").setLevel(Level.WARN)
@@ -45,7 +45,7 @@ object HotzoneAnalysis {
     
     // YOU NEED TO CHANGE THIS PART
     //Count number of points in each rectangle by grouping the join result on rectangle
-    val hotzone = spark.sql("""SELECT rectangle, COUNT(point) no_of_points FROM joinResult GROUP BY rectangle ORDER BY rectangle""")
+    val hotzone = spark.sql("""SELECT rectangle, COUNT(point) no_of_points FROM joinResult GROUP BY rectangle ORDER BY rectangle ASC""")
     logger.info("HotZone Data Set")
     hotzone.show(10)
     

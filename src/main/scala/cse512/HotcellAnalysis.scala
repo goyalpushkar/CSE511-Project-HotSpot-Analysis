@@ -6,7 +6,7 @@ import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.functions._
 
 object HotcellAnalysis {
-  Logger.getLogger("org.spark_project").setLevel(Level.INFO)  //WARN Modified by Team14
+  Logger.getLogger("org.spark_project").setLevel(Level.WARN)  //WARN Modified by Team14 Reverted
   Logger.getLogger("org.apache").setLevel(Level.WARN)
   Logger.getLogger("akka").setLevel(Level.WARN)
   Logger.getLogger("com").setLevel(Level.WARN)
@@ -47,7 +47,8 @@ def runHotcellAnalysis(spark: SparkSession, pointPath: String): DataFrame =
   val minZ = 1
   val maxZ = 31
   val numCells = (maxX - minX + 1)*(maxY - minY + 1)*(maxZ - minZ + 1)
-
+  
+   logger.info("numCells - " + numCells) //Team14 Testing
   // YOU NEED TO CHANGE THIS PART
   
    // Pushkar
@@ -63,68 +64,76 @@ def runHotcellAnalysis(spark: SparkSession, pointPath: String): DataFrame =
   logger.info("cellCountQuery - " + cellCountQuery)
   val cellCounts = spark.sql(cellCountQuery)  
   cellCounts.createOrReplaceTempView("eligible_cells")
-  logger.info(cellCounts.count())
+  //logger.info("Eligible Cell Count - " + cellCounts.count().toString() )
   cellCounts.show()
   
   //Get Mean and Standard deviation of all the cells i.e Pickup Points
-  val cellMeanStdQuery = s""" SELECT ( SUM(count) / $numCells ) mean
+  /*val cellMeanStdQuery = s""" SELECT ( SUM(count) / $numCells ) mean
                                     ,sqrt( ( SUM( power(count, 2) ) / $numCells ) - power( ( SUM(count) / $numCells ) , 2) ) std_dev
                                 FROM eligible_cells
                            """
   logger.info("cellMeanStdQuery - " + cellMeanStdQuery)
   val cellMeanStd = spark.sql(cellMeanStdQuery)
-  logger.info(cellMeanStd.count())
+  //logger.info(cellMeanStd.count())
   cellMeanStd.show()
-  
-  val cellMean = cellMeanStd.first().apply(0)
-  val cellDeviation = cellMeanStd.first().apply(1)
+  //val cellMean1: BigDecimal = scala.math.BigDecimal.valueOf(cellMeanStd.first().apply(0).asInstanceOf[java.lang.Double] )   //math.BigDecimal
+  //val cellDeviation1: BigDecimal = scala.math.BigDecimal.valueOf(cellMeanStd.first().apply(1).asInstanceOf[java.lang.Double])
+  */
+  val cellMean: Double = cellCounts.agg(sum("count") / numCells).first.getDouble(0)
+  val cellDeviation: Double = math.sqrt(cellCounts.agg(sum(pow("count", 2.0)) / numCells - math.pow(cellMean, 2.0)).first.getDouble(0))
+
   logger.info("mean - " + cellMean + " :std - " + cellDeviation)
     
   //Get all the neighbours
-  spark.udf.register("is_neighbour", (x1: Double, y1: Double, z1: Double, x2: Double, y2: Double, z2: Double) => HotcellUtils.is_neighbor(x1, y1, z1, x2, y2, z2) )
-  val neighboursQuery = s""" WITH immediate_neighbours AS
-                                 ( SELECT ec1.x, ec1.y, ec1.z, ec1.count self_count, ec2.count neighbour_count
-                                     FROM eligible_cells ec1
-                                         ,eligible_cells ec2
-                                    WHERE is_neighbour(ec1.x, ec1.y, ec1.z, ec2.x, ec2.y, ec2.z)
-                                 )
-                              SELECT x, y, z  --, self_count, neighbour_count 
-                                    ,SUM(neighbour_count) spatial_weight_of_neighbours
-                                    --,SUM(1) total_neighbours
-                                FROM immediate_neighbours
-                            GROUP BY x, y, z
+  spark.udf.register("is_neighbour", (x1: Double, y1: Double, z1: Double, x2: Double, y2: Double, z2: Double) => 
+       HotcellUtils.is_neighbor(x1, y1, z1, x2, y2, z2) )
+  val neighboursQuery = s""" SELECT ec1.x, ec1.y, ec1.z  --, ec1.count self_count, ec2.count neighbour_count
+                                   ,SUM(ec2.count) spatial_weight_of_neighbours
+                               FROM eligible_cells ec1
+                                   ,eligible_cells ec2
+                              WHERE is_neighbour(ec1.x, ec1.y, ec1.z, ec2.x, ec2.y, ec2.z)
+                            GROUP BY ec1.x, ec1.y, ec1.z
                          """
   logger.info("neighboursQuery - " + neighboursQuery)
   val neighbours = spark.sql(neighboursQuery)
   neighbours.createOrReplaceTempView("eligible_neighbours")
-  logger.info(neighbours.count())
+  //logger.info("Neighbor Count - " + neighbours.count())
   neighbours.show()
   
-  spark.udf.register("get_num_of_neighbours", (x: Double, y: Double, z: Double, minX: Double, maxX: Double, minY: Double, maxY: Double, minZ: Double, maxZ: Double) => 
+  //Get Getis Ord by using the regsitered getis_ord udf (User defined function)
+  spark.udf.register("get_num_of_neighbours", (x: Double, y: Double, z: Double) => 
     HotcellUtils.get_num_of_neighbours(x, y, z, minX, maxX, minY, maxY, minZ, maxZ) )
-  val getisOrdQuery = s"""SELECT x, y, z
-                                ,CASE WHEN (   ( $cellDeviation ) 
-                                    * sqrt( ( ( $numCells * get_num_of_neighbours(x, y, z, $minX, $maxX, $minY, $maxY, $minZ, $maxZ) ) - pow(get_num_of_neighbours(x, y, z, $minX, $maxX, $minY, $maxY, $minZ, $maxZ),2) ) 
-                                          / ( $numCells - 1 ) 
-                                          ) 
-                                  ) = 0 THEN 0   -- This is to check denominator is not zero
-                                  ELSE
-                                        ( en.spatial_weight_of_neighbours - ( $cellMean * get_num_of_neighbours(x, y, z, $minX, $maxX, $minY, $maxY, $minZ, $maxZ) ) )
-                                      / (   ( $cellDeviation ) 
-                                          * sqrt( ( ( $numCells * get_num_of_neighbours(x, y, z, $minX, $maxX, $minY, $maxY, $minZ, $maxZ) ) - pow(get_num_of_neighbours(x, y, z, $minX, $maxX, $minY, $maxY, $minZ, $maxZ),2) ) 
-                                                / ( $numCells - 1 ) 
-                                                ) 
-                                        ) 
-                                  END getis_ord
+  spark.udf.register("getis_ord_cal", (spatial_neighbor_weight: Double, noOfNeighbors: Int) => 
+    HotcellUtils.getis_ord_cal(spatial_neighbor_weight, noOfNeighbors, cellMean, cellDeviation, numCells) )
+  val getisOrdQuery = s"""WITH base_rows AS
+                         (SELECT x, y, z
+                                ,getis_ord_cal(spatial_weight_of_neighbours, get_num_of_neighbours(x, y, z) ) z_score
                             FROM eligible_neighbours en
-                        --GROUP BY x, y, z
-                        ORDER BY getis_ord DESC, x DESC, y ASC, z DESC
+                         )
+                        SELECT x, y, z
+                          FROM base_rows
+                      ORDER BY z_score DESC, x DESC, y ASC, z DESC
                       """
+  
+  /*spark.udf.register("getis_ord", (spatial_neighbor_weight: Double) => 
+    HotcellUtils.getis_ord(spatial_neighbor_weight, cellMean, cellDeviation) )  //It is not passing all test cases only 13/15 are passing
+  val getisOrdQuery = s"""WITH base_rows AS
+                          ( SELECT x, y, z, getis_ord(spatial_weight_of_neighbours) z_score
+                              FROM eligible_neighbours
+                          )
+                        SELECT x, y, z
+                          FROM base_rows
+                      ORDER BY z_score DESC, x DESC, y ASC, z DESC
+                      """
+                       */
   logger.info("getisOrdQuery - " + getisOrdQuery)
   val getisOrd = spark.sql(getisOrdQuery)
   getisOrd.createOrReplaceTempView("getisOrd")
-  logger.info(getisOrd.count())
+  //logger.info("Getis Ord Count - " +getisOrd.count())
   getisOrd.show()
+  
+  //Drop Z score and sort the result by required format
+  //val getisOrdFinal = getisOrd.drop("z_score")
   
   /* Candice
   // obtain all the pickup points x, y, z within the given boundary
